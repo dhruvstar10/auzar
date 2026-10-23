@@ -1,0 +1,26 @@
+# Secrets — never commit
+*.xcconfig
+!*.example.xcconfig
+.env
+.env.*
+!.env.example
+local.settings.json
+
+# Xcode
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+.swiftpm/
+.build/
+
+# macOS / Drive
+.DS_Store
+Icon?
+*.gdoc
+*.gsheet
+
+# Python
+.venv/
+__pycache__/
+tools/out/
