@@ -57,3 +57,11 @@ Newest at the bottom. Format: `YYYY-MM-DD — decision — why`.
 - 2026-10-22 — First guided task will be something **at the owner's desk** (faster build/test
   loop) rather than the car oil check. Exact task TBD.
 - 2026-10-22 — Code hosted in a **private GitHub repo** until the owner decides to publish.
+- 2026-10-22 — Owner: **no task selection.** v0 is open-ended: glasses on → open app → Start →
+  talk. The model infers the task from speech + camera and tracks steps in the conversation.
+  Procedure files become optional grounding later (auto-loaded when a known task is named), not
+  a required step.
+- 2026-10-24 — Owner: the AI must be able to **control glasses inputs/outputs itself**, starting with
+  taking its own sharp photos for diagnosis. Implemented as realtime **function tools** (`ios/SBSI/
+  Sources/Tools.swift`); the model decides when to call them. First tool: `take_photo`. More glasses
+  I/O will be added the same way (list in `ideas.md`).

@@ -33,6 +33,19 @@ Likely realistic split: on-device model for cheap continuous checks ("did the sc
 Concerns: iPhone thermals + battery while also streaming from glasses; model quality on
 fine-grained mechanical details.
 
+## Glasses I/O as tools (owner direction, 2026-10-24)
+
+The model should drive the glasses itself, through realtime function tools (`Tools.swift`), rather
+than the user doing it by hand. Done: `take_photo` (full-res still). Candidates, checked against
+what DAT SDK 1.0.1 exposes:
+- `take_photo` with zoom/crop: ask the user to move closer, or crop the full-res still to a region.
+- `record_clip`: short video for a motion or noise diagnosis, e.g. "what is this rattle?" (the SDK has stream audio frames).
+- Change stream quality: raise the frame rate or resolution while the user does a fiddly step, and lower it when idle to save battery and tokens.
+- `save_photo` with a label: keep evidence ("before"/"after", or S2 work-order photos) on the phone.
+- Pause or resume watching (privacy), and react to the touchpad tap that pauses the session.
+- Look things up: manuals, part diagrams, torque specs (a web/doc search tool) for grounding.
+- Not exposed by the SDK as far as we know: the glasses LED, the display (Gen 2 has none) and the camera's exposure or focus. Recheck with each SDK release.
+
 ## Open questions
 
 - Glasses are Gen 2 (no display), so output is voice-only. A Display model could show text in-lens later.

@@ -1,0 +1,3 @@
+// Shared build settings. Secrets (team ID, Azure key) live in the gitignored Secrets.xcconfig,
+// generated from ../.env by tools/gen_ios_secrets.sh.
+#include? "Secrets.xcconfig"
