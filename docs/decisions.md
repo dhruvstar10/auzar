@@ -65,3 +65,20 @@ Newest at the bottom. Format: `YYYY-MM-DD — decision — why`.
   taking its own sharp photos for diagnosis. Implemented as realtime **function tools** (`ios/SBSI/
   Sources/Tools.swift`); the model decides when to call them. First tool: `take_photo`. More glasses
   I/O will be added the same way (list in `ideas.md`).
+
+## 2026-10-26 — 12 MP photos by default for take_photo
+
+The quick in-stream photo (1080x1440) cannot resolve small print even up close. The detail test showed a 12 MP `camera.photo` at arm's length read every label line, in ~19 s with the video off. The owner had said 35 s was too long. 12 MP is now the default, with `detail: "quick"` for scene-level looks and as the fallback. Revisit if transfer speed drops back to the ~23 KB/s seen in early runs.
+
+## 2026-10-26 — High-detail vision model for photos
+
+The owner asked for "a more robust model for better capture understanding". gpt-realtime-mini shrinks images to ~512 px, so
+photos now also go to a chat-completions deployment named `vision` (currently `gpt-5.4-mini`, the newest GA mini on the resource).
+Its reading is passed to the realtime model as text. The deployment name is generic so the model can be swapped. Desk test on two
+12 MP photos: both labels read fully, and it corrected OCR errors, in 4–5 s at ~2k input tokens per photo.
+
+## 2026-10-26 — Tiered photos: quick by default, 12 MP on request
+
+Supersedes "12 MP photos by default" (same day). The owner wants the guide to use video frames or a quick photo when enough, and to
+ask the user before a higher-res photo. Default `take_photo` = quick (read by the vision model); 12 MP only after the user agrees or
+asks. Reason: 12 MP takes 17–72 s with the video paused. The large (1920x1080) size was ruled out: it gave confident misreads.

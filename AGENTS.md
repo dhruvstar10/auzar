@@ -79,6 +79,17 @@ Key design points:
   - Requires the **paid Apple Developer team** (Hotspot entitlement for the Wi-Fi Direct video link).
   - iOS asks to join the glasses' Wi-Fi on each new stream, so start one stream per task and keep it alive.
   - Handle `datAppOnTheGlassesUpdateRequired` → `openDATGlassesAppUpdate()`.
+  - Full-quality stills (4032×3024) need `camera.photo` (experimental), NOT `stream.capturePhoto` (1080×1440 only).
+    `camera.photo` speed varies: ~20–25 KB/s in early runs (12 MP ≈ 60 s, large 1920x1080 ≈ 18 s, video off; 2026-10-26).
+    Later run: 12 MP in ~19 s (~75 KB/s), and only 12 MP made small print readable, so it IS the default for `take_photo` now
+    (the quick photo is the fallback). full/medium and full/low failed with captureFailure. Photos come back as HEIC.
+    Stop the stream, start Photo, capture, stop Photo, then restart the stream (restarting while Photo runs kills video).
+  - **One camera, at the left front corner** of the frame. Up close, a label held in front of the nose drifts right and out of
+    frame; ask the user to hold it in front of their LEFT eye.
+  - Touching the side touchpad can PAUSE the camera session, even a volume slide (2026-10-24, likely),
+    and it may not resume by itself. The app does a full stop→start after 5 s paused. Change volume with the phone buttons.
+- gpt-realtime-mini **downsizes every image to ~512 px** (≤323 tokens; `detail:"high"` is ignored), so send
+  **crops** for fine detail (tested 2026-10-26: a 2× crop read 15 px text, the full photo didn't).
 - Realtime APIs don't ingest video; the app sends **still frames** as images. Keep only the
   last few frames in context to control cost.
 - **Proactivity is app-driven**: periodically (or on scene change) trigger a silent
@@ -107,9 +118,18 @@ Key design points:
   then `xcrun devicectl device install app --device <DEVICE_ID> <DerivedData>/Build/Products/Debug-iphoneos/SBSI.app`.
   Note: the CLI can reuse provisioning profiles but can't create them ("No Accounts"). The first build
   of a new bundle ID must be done once from the Xcode GUI.
-  Sources: `GlassesCamera` (DAT session/stream), `AudioIO` (HFP mic/speaker, 24 kHz PCM16),
+  Sources: `GlassesCamera` (DAT session/stream), `VideoPreview` (hardware full-rate preview), `VideoDecoder` (HEVC→images for the model), `AudioIO` (HFP mic/speaker, 24 kHz PCM16),
   `RealtimeClient` (WebSocket), `Assistant` (frames every N s, keeps last 3 images, barge-in,
-  out-of-band proactive check), `Prompts` (guide instructions).
+  out-of-band proactive check via forced `proactive_decision` call), `Prompts` (guide instructions),
+  `Tools` (function tools the model calls to control the glasses, e.g. `take_photo`), `PhotoReader` (on-device OCR + main-label crop),
+  `VisionClient` (photo → `vision` deployment for high-detail reading), `Log`. Azure CLI is set up (`az`, resource group `rg-sbsi`).
+  **Pull logs from the phone** (runs away from the Mac; the app appends to `Documents/logs/<yyyy-mm-dd>.log`,
+  also visible in the Files app → On My iPhone → SBSI Guide):
+  `xcrun devicectl device copy from --device <DEVICE_ID> --domain-type appDataContainer --domain-identifier com.dhruvgoel.sbsi --source Documents/logs --destination tools/out/phone-logs`.
+  Session images (glasses photo originals, the exact images sent to the model, frames): same command with
+  `--source Documents/sessions --destination tools/out/sessions`.
+  Live logs instead: `xcrun devicectl device process launch --console --terminate-existing --device <DEVICE_ID> com.dhruvgoel.sbsi`
+  (the phone must be unlocked and connected).
 - `backend/` — (to come) Azure Function for token minting. (Later, for S2: work-order/photo sync.)
 - `procedures/` — (to come) task procedure files (JSON/Markdown).
 

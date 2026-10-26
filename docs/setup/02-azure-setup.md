@@ -45,3 +45,13 @@ Never put keys or endpoints-with-keys in this file. Record names/regions only.
 ## Notes
 
 Sources: https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure-region-availability
+
+## Vision deployment (2026-10-26)
+
+- [x] Azure CLI installed (`brew install azure-cli`, 2.91.0) and logged in (`az login`, Visual Studio Enterprise Subscription).
+  Resource group: **`rg-sbsi`**.
+- [x] Deployment **`vision`** → `gpt-5.4-mini` version 2026-03-17, GlobalStandard, 50K TPM, created with:
+  `az cognitiveservices account deployment create -g rg-sbsi -n sbsi-foundry-dg --deployment-name vision --model-name gpt-5.4-mini --model-version 2026-03-17 --model-format OpenAI --sku-name GlobalStandard --sku-capacity 50`
+- Used by `VisionClient.swift` (chat completions at `https://<host>/openai/v1/chat/completions`, `model` = deployment name) and
+  `tools/vision_test.py`. `.env` key: `AZURE_OPENAI_VISION_DEPLOYMENT=vision`, passed to the app via `tools/gen_ios_secrets.sh`.
+- List models the resource can deploy: `az cognitiveservices account list-models -g rg-sbsi -n sbsi-foundry-dg`.

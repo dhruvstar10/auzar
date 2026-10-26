@@ -7,6 +7,8 @@ struct AppConfig {
   let azureHost: String
   let azureKey: String
   let deployment: String
+  /// Chat-completions deployment for high-detail photo reading (VisionClient); nil = off.
+  let visionDeployment: String?
 
   static func load() -> AppConfig? {
     let info = Bundle.main.infoDictionary ?? [:]
@@ -17,7 +19,8 @@ struct AppConfig {
     guard let host = value("SBSIAzureHost"), let key = value("SBSIAzureKey"),
       let deployment = value("SBSIAzureDeployment")
     else { return nil }
-    return AppConfig(azureHost: host, azureKey: key, deployment: deployment)
+    return AppConfig(azureHost: host, azureKey: key, deployment: deployment,
+                     visionDeployment: value("SBSIAzureVisionDeployment"))
   }
 
   var realtimeURL: URL {

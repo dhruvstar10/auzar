@@ -19,6 +19,10 @@ struct ContentView: View {
           .buttonStyle(.borderedProminent)
           .tint(.orange)
       }
+      if assistant.isRunning, glasses.isPaused || (glasses.sessionState == .started && !glasses.isStreaming) {
+        Button("Restart camera") { assistant.restartCamera() }
+          .buttonStyle(.bordered)
+      }
       if let error = glasses.lastError {
         Text(error).font(.caption).foregroundStyle(.red).lineLimit(2)
       }
@@ -42,6 +46,8 @@ struct ContentView: View {
       VStack(alignment: .leading, spacing: 2) {
         Text("SBSI Guide").font(.headline)
         status("Glasses", "\(glasses.registrationState == .registered ? "registered" : "not registered") · \(glasses.sessionState.description) · \(String(describing: glasses.streamState))")
+        status("Video", glasses.isStreaming ? String(format: "%.0f fps", glasses.frameRate) : "off")
+        if let photo = glasses.photoStatus { status("Photo", photo) }
         status("AI", assistant.aiStatus)
       }
       Spacer()
@@ -61,9 +67,8 @@ struct ContentView: View {
   private var preview: some View {
     ZStack {
       RoundedRectangle(cornerRadius: 12).fill(Color.black)
-      if let frame = glasses.latestFrame {
-        Image(uiImage: frame).resizable().scaledToFit()
-      } else {
+      VideoPreview(sink: glasses.videoSink)
+      if !glasses.hasVideo || !glasses.isStreaming {
         Text(assistant.isRunning ? "Waiting for glasses video…" : "Glasses video appears here")
           .foregroundStyle(.white.opacity(0.6)).font(.callout)
       }
@@ -105,8 +110,16 @@ struct ContentView: View {
   private var settings: some View {
     VStack(spacing: 4) {
       Toggle("Speak up proactively", isOn: $assistant.proactiveEnabled)
-      Toggle("Mute mic while guide talks", isOn: $assistant.muteMicWhileSpeaking)
-      Stepper("Frame every \(Int(assistant.frameInterval)) s", value: $assistant.frameInterval, in: 1...10)
+      Toggle("12 MP photos (20–60 s, video off)", isOn: Bindable(glasses).fullResPhotos)
+      if assistant.isRunning {
+        Button(assistant.detailTestRunning ? "Detail test running…" : "Run photo detail test") {
+          Task { await assistant.runDetailTest() }
+        }
+        .disabled(assistant.detailTestRunning || !glasses.isStreaming)
+      }
+      Stepper("Interrupt level \(Int(assistant.interruptThresholdDb)) dB (lower = easier)",
+              value: $assistant.interruptThresholdDb, in: -50...(-10), step: 5)
+      Stepper("Send a frame to the AI every \(Int(assistant.frameInterval)) s", value: $assistant.frameInterval, in: 1...10)
         .disabled(assistant.isRunning)
     }
     .font(.footnote)
