@@ -1,6 +1,6 @@
 import Foundation
 
-/// Second opinion on photos from a high-detail vision model (Azure chat-completions deployment,
+/// Second opinion on photos from a high-detail vision model (full-resolution photo + OCR text) (Azure chat-completions deployment,
 /// `SBSIAzureVisionDeployment`). gpt-realtime-mini shrinks every image to ~512 px, so it can't read
 /// the fine print a 12 MP photo captures; this model gets the photo and the label close-up at high
 /// detail and its answer goes to the realtime model as text (2026-10-26).
@@ -29,8 +29,10 @@ struct VisionClient {
     for (label, data) in [("Whole photo:", photo), ("Close-up of the main label:", closeUp)] {
       guard let data else { continue }
       content.append(["type": "text", "text": label])
+      // "original" keeps the photo's full resolution; "high" shrinks a 12 MP photo to ~1024x768, which
+      // lost a printer's model badge that "original" read (MF269dw), for ~3.4k tokens (2026-10-27).
       content.append(["type": "image_url",
-                      "image_url": ["url": "data:image/jpeg;base64,\(data.base64EncodedString())", "detail": "high"]])
+                      "image_url": ["url": "data:image/jpeg;base64,\(data.base64EncodedString())", "detail": "original"]])
     }
     var body: [String: Any] = [
       "model": deployment,

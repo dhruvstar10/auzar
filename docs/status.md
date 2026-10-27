@@ -203,6 +203,46 @@ speech back through the glasses, with frames every 2 s. Owner verdict: "This was
   hinge, link; video resolution and fps before the stop, since the SDK drops to 504x896 when the link is congested; phone battery,
   low power, thermal, app state), `photo-diag transfer` (time to first byte, KB/s, slowest and fastest 3 s windows) and
   `photo-diag audio` (guide audio seconds and user utterances during the photo, audio route). Compare slow and fast photos. Untested.
+  **Guide session 2026-10-27 00:27 UTC (laundry room, Samsung washer):** the quick photo plus vision worked ("Samsung front loader", model number
+  unreadable, sensible cleaning steps). Problems: (1) **The shutter sound cut off the guide**: the tool call arrives while the guide's audio is
+  still playing, so the capture fired mid-sentence. (2) The quick photo took **9 s** (usually ~2 s). (3) The guide **didn't offer a 12 MP photo**
+  even though vision said the model number was unreadable. (4) At 00:28:58 the **glasses ended the session themselves** ("Session ended by
+  device", user didn't stop it); cause unknown and there was no device-state logging. The app carried on with no video for 70 s and the model
+  **claimed to see the view changing**. Fixes: the capture waits until the guide stops talking (+0.3 s); "quick photo took X s" is logged;
+  if the vision answer says something is unreadable (or vision failed), the tool output tells the model to offer a 12 MP photo; on an
+  unexpected session end the app tells the user and the model ("you can't see anything") and reconnects (10 tries, 3 s apart), then says
+  "camera is back"; glasses state changes (worn, hinge, battery, thermal, link) are logged all session. Untested.
+  **Session 00:35 UTC (same washer):** glasses 73% battery, worn, cool, connected; video **504x896 @ ~11 fps** the whole time (SDK
+  congestion mode). (1) The quick photo **timed out at 15 s**: beeps, then nothing, so the user couldn't tell what happened or which kind of
+  photo it was. The fallback 504x896 frame was useless. (2) The guide offered 12 MP (the nudge worked); the user said yes. The 12 MP
+  transfer ran at **18 KB/s (12–24)**, first byte after 7.4 s, and the user stopped the session at 67% after ~1 min. (3) The live "Photo
+  taken…" cue was **spoken twice**. (4) The guide answered "I still can't read it" mid-transfer (26 s of guide audio during the photo).
+  **Diagnostic so far:** every slow or failed photo came with the video already degraded (504x896, ≤15 fps) before the photo, so the
+  link was congested; the laundry room with metal appliances may matter. Keep comparing the `photo-diag before` video line against KB/s.
+  **Fixes:** the app owns all photo cues, **pre-recorded in the guide's voice** (`tools/gen_cues.py` → `ios/SBSI/Resources/cues/*.pcm`,
+  checked word for word): "Taking a photo. Hold still." / "Taking a high-resolution photo. Hold still for a few seconds.", then beeps,
+  then chime + "Got it." / chime + "Got it, you can move. I'm processing the photo; this can take up to a minute.", or on failure a falling
+  tone + "Sorry, the photo didn't come through." The guide no longer speaks before take_photo, and a system note at photo start says to
+  only answer "still coming" until the result. Untested.
+  **Session 00:42 UTC (printer at the desk):** quick photo 2.4 s; 12 MP **65 KB/s** (first byte 4.0 s, 23 s total) even though the video
+  was 504x896 @ 18 fps beforehand. So degraded video does NOT reliably predict a slow transfer; location still looks likely (laundry room 18 KB/s).
+  Owner: two greetings were heard (the app sends one; now logging every response start, and speech the server heard with no words, to
+  catch an echo-triggered reply). Quick photos no longer beep unless they take more than 3 s. Owner: "it replies with reference to the
+  first photo even when it knows a 2nd high-res photo is in progress". The second answer did come from the 12 MP photo but was no better:
+  the "imageCLASS MF269dw" badge is visible in it, yet (a) the close-up framed the big "Canon" logo, and (b) vision got the photo at
+  detail "high" (~1024x768).
+  **Desk tests, gpt-5.4-mini:** detail "original" (full 4032x3024, ~3.4k tokens, 5–7 s) read "Canon imageCLASS MF269dw" (checked by eye;
+  the badge is at the limit of legibility). Original + OCR + the Canon close-up said "MF244dw" (wrong: a wrong close-up misleads).
+  Original + OCR, no close-up: the bag was correct twice (once 13/15 vs 13/16), the printer gave MF264dw (hedged) and MF269dw.
+  **Change:** vision now gets the full-resolution photo at detail "original" plus the OCR text, and no close-up. Untested on device.
+- **Printer run on device (session 2026-10-26_19-43-01, log 2026-10-27.log 02:43–02:47):** one greeting this time.
+  Quick photos: vision said the badge was too blurry and the guide offered 12 MP (as designed). Both 12 MP transfers ran at **70 KB/s**
+  (18 s and 15 s, first byte after 2–3 s) at the printer, with video at 504x896. Vision at full resolution: photo 2 said "looks like MF269dw,
+  but I can't confirm"; photo 4 said "imageCLASS MF269dw" (middle digits a bit blurry), and the guide read it out correctly.
+  **Issue:** on photo 2 the guide dropped the hedged reading and said only "too blurry" (the prompt said to believe "unreadable").
+  It also later said "if you share the printer's model…" after reading it, and it can't look up instructions (no web access).
+  **Change:** prompt now says to relay a hedged reading as likely, and to remember what it has already identified. Untested.
+  Idea: a web/manual lookup tool for model-specific steps (see ideas.md).
 - Next (was: test `take_photo`) (reading text, a label or model plate). Then a real multi-step task
   (proactive step confirmation). Then more glasses I/O as tools (see `ideas.md`).
 

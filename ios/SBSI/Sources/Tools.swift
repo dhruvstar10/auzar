@@ -32,7 +32,8 @@ enum Tools {
         a diagnosis. Also use it when the user asks you to take a picture. Default is a quick photo \
         (1080x1440, a few seconds). Use detail "full" (12 MP, 20 to 75 seconds, video paused) only when a \
         quick photo couldn't resolve the fine print AND the user has agreed to wait, or they ask for a \
-        high-res photo. Each photo comes back with a high-detail analysis and on-device text recognition.
+        high-res photo. Don't speak before calling it: the app announces the photo and plays the cues. \
+        Each photo comes back with a high-detail analysis and on-device text recognition.
         """,
       "parameters": [
         "type": "object",

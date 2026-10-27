@@ -65,6 +65,13 @@ final class GlassesCamera {
   var isPaused: Bool { streamState == .paused || sessionState == .paused }
   /// Called when the camera pauses (true) or resumes (false).
   @ObservationIgnored var onPausedChange: ((Bool) -> Void)?
+  /// Called when the glasses end the session on their own (not Stop or restart), e.g.
+  /// "Session ended by device" mid-task (2026-10-27). The app should reconnect.
+  @ObservationIgnored var onSessionLost: ((String) -> Void)?
+  /// Called when video starts streaming (after a start, photo or reconnect).
+  @ObservationIgnored var onStreaming: (() -> Void)?
+  @ObservationIgnored private var lastSessionError: String?
+  @ObservationIgnored private var lastDeviceState: DeviceState?
   @ObservationIgnored private var wasPaused = false
   @ObservationIgnored private var restartPending = false
 
@@ -164,9 +171,16 @@ final class GlassesCamera {
     notifyPauseIfChanged()
     switch state {
     case .started:
+      listenToDeviceState()
       Task { await startStream() }
     case .stopped:
+      let lost = !stopRequested && !restartPending
       teardown()
+      if lost {
+        sbsiLog("glasses: session lost (\(lastSessionError ?? "no error"))")
+        onSessionLost?(lastSessionError ?? "The glasses ended the session.")
+      }
+      lastSessionError = nil
       if restartPending {
         restartPending = false
         Task { @MainActor in
@@ -179,8 +193,23 @@ final class GlassesCamera {
     }
   }
 
+  /// Log glasses state changes (worn, hinge, battery, thermal, link) to explain session drops.
+  private func listenToDeviceState() {
+    guard let device = session?.device else { return }
+    lastDeviceState = nil
+    device.addDeviceStateListener { [weak self] state in
+      Task { @MainActor in
+        guard let self, state != self.lastDeviceState else { return }
+        self.lastDeviceState = state
+        sbsiLog("glasses state: worn=\(state.donState) hinge=\(state.hingeState) battery=\(state.batteryLevel.map { "\($0)%" } ?? "?") "
+                + "\(state.chargingState) thermal=\(state.thermalLevel) link=\(state.linkState)")
+      }
+    }.store(in: sessionTokens)
+  }
+
   private func handleSessionError(_ error: DeviceSessionError) {
     sbsiLog("glasses session error: \(error)")
+    lastSessionError = error.description
     if case .datAppOnTheGlassesUpdateRequired = error {
       needsGlassesAppUpdate = true
     }
@@ -250,6 +279,7 @@ final class GlassesCamera {
     notifyPauseIfChanged()
     // Video is back: clear a stale video error so the banner doesn't contradict the live picture.
     if state == .streaming, lastError?.hasPrefix("Glasses video error") == true { lastError = nil }
+    if state == .streaming && !streamSetAside { onStreaming?() }
     // Stopped on purpose for a photo: keep the camera and listeners, it comes straight back.
     if state == .stopped && !streamSetAside {
       streamTokens = ListenerTokenBag()
@@ -349,7 +379,11 @@ final class GlassesCamera {
     guard let camera, await waitUntil(10, { isStreaming }) else { return nil }
     photoStatus = "Quick photo: capturing…"
     defer { photoStatus = nil }
-    return await waitForPhoto(timeout: .seconds(15)) { camera.stream.capturePhoto(format: .jpeg) }
+    let started = Date()
+    let data = await waitForPhoto(timeout: .seconds(15)) { camera.stream.capturePhoto(format: .jpeg) }
+    sbsiLog(String(format: "quick photo took %.1f s (video %@)", Date().timeIntervalSince(started),
+                   newestFrame.map { "\(Int($0.size.width))x\(Int($0.size.height))" } ?? "?"))
+    return data
   }
 
   /// One `camera.photo` capture, logging size, timing and the network link. With `stopStream`

@@ -139,6 +139,28 @@ final class AudioIO {
     play(pcm16: Self.tones([(1000, 70)], volume: 0.15))
   }
 
+  /// Low falling two-note tone ("that didn't work").
+  func playFailTone() {
+    play(pcm16: Self.tones([(660, 150), (440, 260)], volume: 0.3))
+  }
+
+  /// Spoken photo cues, pre-recorded in the guide's voice by tools/gen_cues.py (keep keys in sync).
+  /// Bundled, so they play instantly and identically; a live cue response once said its line twice.
+  enum Cue: String {
+    case quickStart = "quick_start", quickDone = "quick_done", fullStart = "full_start", fullDone = "full_done", failed
+  }
+
+  func play(_ cue: Cue) {
+    guard let url = Bundle.main.url(forResource: cue.rawValue, withExtension: "pcm")
+      ?? Bundle.main.url(forResource: cue.rawValue, withExtension: "pcm", subdirectory: "cues"),
+      let data = try? Data(contentsOf: url)
+    else {
+      sbsiLog("cue \(cue.rawValue) missing from the app bundle")
+      return
+    }
+    play(pcm16: data)
+  }
+
   /// Sine tones (Hz, ms) in sequence with a soft attack and tail, as PCM16 @ 24 kHz.
   private static func tones(_ notes: [(Double, Double)], volume: Double) -> Data {
     var samples = [Int16]()

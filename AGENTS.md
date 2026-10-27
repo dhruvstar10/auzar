@@ -122,7 +122,8 @@ Key design points:
   `RealtimeClient` (WebSocket), `Assistant` (frames every N s, keeps last 3 images, barge-in,
   out-of-band proactive check via forced `proactive_decision` call), `Prompts` (guide instructions),
   `Tools` (function tools the model calls to control the glasses, e.g. `take_photo`), `PhotoReader` (on-device OCR + main-label crop),
-  `VisionClient` (photo → `vision` deployment for high-detail reading), `Log`. Azure CLI is set up (`az`, resource group `rg-sbsi`).
+  `VisionClient` (photo → `vision` deployment for high-detail reading), `Log`. Spoken photo cues are pre-recorded
+  (`tools/gen_cues.py` → `ios/SBSI/Resources/cues/`); re-run it if a cue line or the voice changes. Azure CLI is set up (`az`, resource group `rg-sbsi`).
   **Pull logs from the phone** (runs away from the Mac; the app appends to `Documents/logs/<yyyy-mm-dd>.log`,
   also visible in the Files app → On My iPhone → SBSI Guide):
   `xcrun devicectl device copy from --device <DEVICE_ID> --domain-type appDataContainer --domain-identifier com.dhruvgoel.sbsi --source Documents/logs --destination tools/out/phone-logs`.

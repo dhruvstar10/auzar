@@ -41,6 +41,9 @@ final class Assistant {
   @ObservationIgnored private let realtime = RealtimeClient()
   @ObservationIgnored private var config: AppConfig?
   @ObservationIgnored private var speechStarts = 0
+  /// The glasses ended the session mid-task; reconnecting. The model must not claim to see anything.
+  @ObservationIgnored private var cameraLost = false
+  @ObservationIgnored private var reconnectTask: Task<Void, Never>?
   /// Last thing the user said, passed to the vision model as the question behind a photo.
   @ObservationIgnored private var lastUserText = ""
   @ObservationIgnored private var frameTimer: Timer?
@@ -74,6 +77,8 @@ final class Assistant {
     glasses.onPausedChange = { [weak self] paused in
       Task { @MainActor in self?.handleCameraPaused(paused) }
     }
+    glasses.onSessionLost = { [weak self] reason in self?.handleSessionLost(reason) }
+    glasses.onStreaming = { [weak self] in self?.handleStreamingResumed() }
     audio.onRouteNote = { [weak self] note in
       Task { @MainActor in self?.add("app", note) }
     }
@@ -131,6 +136,8 @@ final class Assistant {
     proactiveTimer?.invalidate()
     realtime.disconnect()
     audio.stop()
+    reconnectTask?.cancel()
+    cameraLost = false
     glasses.stop()
     aiStatus = "idle"
     sbsiLog("assistant stopped. images=\(imagesSent) in=\(inputTokens) out=\(outputTokens) imageTokens=\(imageTokens)")
@@ -198,6 +205,7 @@ final class Assistant {
       sbsiLog(type)
 
     case "input_audio_buffer.speech_started":
+      sbsiLog("server heard speech start")
       userSpeaking = true
       speechStarts += 1
       lastActivity = Date()
@@ -212,9 +220,19 @@ final class Assistant {
       if let text = event["transcript"] as? String, !text.isEmpty {
         add("you", text)
         lastUserText = text
+      } else {
+        sbsiLog("you: (no words; noise or echo was taken as speech)")
       }
 
     case "response.created":
+      // Two greetings were heard (2026-10-27) though the app asks for one; log who starts each response.
+      let response = event["response"] as? [String: Any]
+      let purpose = (response?["metadata"] as? [String: Any])?["purpose"] as? String
+      sbsiLog("response started\(purpose.map { " (\($0))" } ?? "")")
+      if purpose == nil, !assistantTranscript.isEmpty {
+        add("guide", assistantTranscript)  // keep overlapping replies as separate lines
+        assistantTranscript = ""
+      }
       responseInProgress = true
 
     case "response.output_audio.delta":
@@ -334,28 +352,50 @@ final class Assistant {
     // Audio cues (owner, 2026-10-26): "hold still until the chime" left the user guessing through a
     // long silence. So: soft beeps while the photo is being taken, a chime when the shutter has fired,
     // then the guide's voice says the answer will take a while (transfer 17-70 s + ~5 s reading).
+    // Audio cues the app owns (owner, 2026-10-26/27): an announcement saying which kind of photo,
+    // soft beeps while it's being taken, then a clear outcome: chime + "Got it" (12 MP: "you can move,
+    // processing… up to a minute") or a fail tone + "Sorry, the photo didn't come through". Beeps that
+    // just stopped left the user guessing; a live spoken cue was once doubled. All pre-recorded.
+    // Wait for the guide to finish first: the tool call arrives while its audio is still playing, and
+    // the shutter cut it off mid-sentence (2026-10-27).
+    func waitForQuiet(_ limit: Double = 8) async {
+      let start = Date()
+      while audio.isPlaying, Date().timeIntervalSince(start) < limit { try? await Task.sleep(for: .milliseconds(100)) }
+    }
+    systemNote("A photo is being taken now. Until its result arrives, if the user speaks, only say it's still coming; don't answer from older images.")
+    await waitForQuiet()
+    audio.play(full ? .fullStart : .quickStart)
+    await waitForQuiet()
     let playedBefore = audio.playedSeconds, speechBefore = speechStarts, photoStart = Date()
     let beeper = Task { @MainActor [audio] in
+      // A quick photo usually lands in ~2 s (the glasses play their own shutter sound), so only beep
+      // if it's taking longer (owner, 2026-10-27). 12 MP beeps from the start.
+      if quick { try? await Task.sleep(for: .seconds(3)) }
       while !Task.isCancelled {
-        if !audio.isPlaying { audio.playBeep() }  // don't beep over the guide's "Hold still"
+        if !audio.isPlaying { audio.playBeep() }
         try? await Task.sleep(for: .milliseconds(700))
       }
     }
     let data = await glasses.capturePhoto(quick: quick) { [weak self] in
-      // The shutter has fired; the transfer doesn't need the user to keep still.
+      // 12 MP: the shutter has fired; the transfer doesn't need the user to keep still.
       Task { @MainActor in
         guard let self else { return }
         beeper.cancel()
         self.audio.playChime()
-        self.speakCue("Photo taken. I'm processing it now; the answer can take up to a minute.")
+        self.audio.play(.fullDone)
       }
     }
     sbsiLog(String(format: "photo-diag audio: %.1f s of guide audio and %d user utterances during the %.0f s photo; route %@",
                    audio.playedSeconds - playedBefore, speechStarts - speechBefore, Date().timeIntervalSince(photoStart),
                    audio.inputRouteName))
-    if !beeper.isCancelled {  // quick photo, or the 12 MP one failed before the shutter
-      beeper.cancel()
-      if data != nil { audio.playChime() }
+    let shutterCued = beeper.isCancelled
+    beeper.cancel()
+    if data == nil {
+      audio.playFailTone()
+      audio.play(.failed)
+    } else if !shutterCued {
+      audio.playChime()
+      audio.play(.quickDone)
     }
     if let data, let photo = UIImage(data: data) {
       image = photo
@@ -404,17 +444,27 @@ final class Assistant {
     let what = isFallback
       ? "The full photo failed, so this comes from the newest video frame (softer than a real photo). If still unreadable, ask the user to take the phone out of their pocket and unlock it, then try again."
       : "Photo taken (\(Int(upright.size.width))x\(Int(upright.size.height)))."
-        + (full ? "" : " This was a quick photo. If the detail you need is still unreadable, ask the user whether to take a sharper 12 MP photo (about a minute, video pauses); take it only if they agree.")
+        + (full ? "" : " This was a quick photo.")
     // High-detail second opinion (VisionClient): the realtime model can't see fine print.
     var analysis: String?
     if let config, let deployment = config.visionDeployment {
       add("app", "Reading the photo…")
-      let photoJPEG = upright.scaled(maxSide: 2048).jpegData(compressionQuality: 0.85) ?? overview
+      // Full resolution, no close-up: at full resolution the close-up adds nothing, and when it framed the
+      // wrong text (a "Canon" logo, not the model badge) it misled the model (desk tests, 2026-10-27).
+      let photoJPEG = upright.jpegData(compressionQuality: 0.9) ?? overview
       let question = "The user said: \"\(lastUserText)\". The guide wants: \(reason)"
       analysis = await VisionClient(config: config, deployment: deployment)
-        .analyze(question: question, ocr: ocrText, photo: photoJPEG, closeUp: reading.textRegion != nil ? zoomed : nil)
+        .analyze(question: question, ocr: ocrText, photo: photoJPEG, closeUp: nil)
       if let analysis { media?.save(Data(analysis.utf8), as: "photos/photo\(photosTaken)-vision.txt") }
     }
+    // The model didn't offer a sharper photo on its own when the reading was incomplete (2026-10-27).
+    let unreadable = analysis.map { text in
+      ["can't read", "cannot read", "can’t read", "unreadable", "not readable", "too blurry", "can't make out", "can’t make out", "not legible"]
+        .contains { text.lowercased().contains($0) }
+    } ?? false
+    let offer = !full && glasses.fullResPhotos && (unreadable || analysis == nil)
+      ? "\nSome text the user may need is unreadable in this quick photo. After answering what you can, ask the user in one short sentence whether to take a sharper 12 MP photo (it takes about a minute). Take it only if they say yes."
+      : ""
     let analysisText = analysis.map {
       "\nHigh-detail analysis of the full-resolution photo by a vision model (most reliable for small text; prefer it over your own view and the OCR):\n\($0)"
     } ?? ""
@@ -424,7 +474,7 @@ final class Assistant {
     realtime.send([
       "type": "conversation.item.create",
       "item": ["type": "function_call_output", "call_id": callID,
-               "output": "\(what)\n\(ocrSummary)\(analysisText)\nNext message: the whole view, then a \(zoomLabel)."],
+               "output": "\(what)\n\(ocrSummary)\(analysisText)\(offer)\nNext message: the whole view, then a \(zoomLabel)."],
     ])
     realtime.send([
       "type": "conversation.item.create",
@@ -482,6 +532,50 @@ final class Assistant {
         "response": ["instructions": "In one short sentence, tell the user the camera paused and you're restarting it."],
       ])
     }
+  }
+
+  /// The glasses ended the session on their own ("Session ended by device", 2026-10-27). Without this
+  /// the app carried on with no video and the model claimed it could see the user moving around.
+  private func handleSessionLost(_ reason: String) {
+    guard isRunning else { return }
+    cameraLost = true
+    add("app", "Glasses disconnected (\(reason)). Reconnecting…")
+    systemNote("The glasses camera disconnected. You can't see anything new: don't describe the scene, read anything or claim to see changes until you're told the camera is back. The app is reconnecting.")
+    if !responseInProgress {
+      realtime.send(["type": "response.create",
+                     "response": ["instructions": "In one short sentence, tell the user the glasses disconnected and you're reconnecting."]])
+    }
+    reconnectTask?.cancel()
+    reconnectTask = Task { @MainActor [weak self] in
+      for attempt in 1...10 {
+        try? await Task.sleep(for: .seconds(3))
+        guard let self, !Task.isCancelled, self.isRunning, self.cameraLost else { return }
+        guard self.glasses.sessionState == .stopped || self.glasses.sessionState == .idle else { continue }
+        sbsiLog("reconnect attempt \(attempt)")
+        guard self.glasses.start() else { continue }  // e.g. glasses folded: noEligibleDevice
+        for _ in 0..<50 where !self.glasses.isStreaming { try? await Task.sleep(for: .milliseconds(200)) }
+        if self.glasses.isStreaming { return }
+      }
+      guard let self, self.isRunning, self.cameraLost else { return }
+      self.add("app", "Couldn't reconnect to the glasses. Make sure they're on and unfolded, then press Stop and Start.")
+      self.systemNote("The glasses could not be reconnected. Tell the user briefly to check the glasses are on and unfolded, then restart the session.")
+      if !self.responseInProgress { self.realtime.send(["type": "response.create"]) }
+    }
+  }
+
+  private func handleStreamingResumed() {
+    guard isRunning, cameraLost else { return }
+    cameraLost = false
+    reconnectTask?.cancel()
+    add("app", "Glasses reconnected")
+    systemNote("The glasses camera is back; new images are live again.")
+  }
+
+  private func systemNote(_ text: String) {
+    realtime.send([
+      "type": "conversation.item.create",
+      "item": ["type": "message", "role": "system", "content": [["type": "input_text", "text": text]]],
+    ])
   }
 
   private func sendToolOutput(callID: String, output: String) {
@@ -549,20 +643,6 @@ final class Assistant {
 
   // MARK: - Helpers
 
-  /// Speak a fixed line in the guide's own voice: an out-of-band response with no conversation
-  /// context, so it can't wander off script or disturb the pending photo call.
-  private func speakCue(_ text: String) {
-    realtime.send([
-      "type": "response.create",
-      "response": [
-        "conversation": "none",
-        "input": [Any](),
-        "output_modalities": ["audio"],
-        "instructions": "Say exactly this, word for word, calmly, and nothing else: \"\(text)\"",
-        "metadata": ["purpose": "cue"],
-      ],
-    ])
-  }
 
   private func add(_ who: String, _ text: String) {
     sbsiLog("\(who): \(text)")

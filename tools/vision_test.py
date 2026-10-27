@@ -57,8 +57,8 @@ def main():
     ap.add_argument("crop", type=Path, nargs="?")
     ap.add_argument("--ocr", type=Path)
     ap.add_argument("--question", default="Read the label on what I'm holding.")
-    ap.add_argument("--detail", default="high")
-    ap.add_argument("--max-side", type=int, default=2048)
+    ap.add_argument("--detail", default="original")
+    ap.add_argument("--max-side", type=int, default=4032)
     ap.add_argument("--effort", default="low", help="reasoning_effort; 'none' to omit")
     args = ap.parse_args()
 
