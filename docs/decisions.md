@@ -82,3 +82,9 @@ Its reading is passed to the realtime model as text. The deployment name is gene
 Supersedes "12 MP photos by default" (same day). The owner wants the guide to use video frames or a quick photo when enough, and to
 ask the user before a higher-res photo. Default `take_photo` = quick (read by the vision model); 12 MP only after the user agrees or
 asks. Reason: 12 MP takes 17–72 s with the video paused. The large (1920x1080) size was ruled out: it gave confident misreads.
+
+## 2026-10-26 — Product name: Auzar.ai
+
+The owner named the app **Auzar.ai**, after the Hindi word for tools (a nod to *Home Improvement*'s Tool Time).
+The GitHub repo is now `dhruvstar10/auzar` (GitHub redirects the old `sbsi` URL). Internal names (`SBSI` target, bundle ID
+`com.dhruvgoel.sbsi`, Azure `sbsi-foundry-dg` / `rg-sbsi`, folder `~/code/sbsi`) are unchanged to avoid re-provisioning.

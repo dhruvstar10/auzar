@@ -6,6 +6,9 @@ should all read this first. `CLAUDE.md` simply imports this file. Keep project k
 
 ## What we're building
 
+**Name: Auzar.ai** (from the Hindi word for tools; renamed from the working name SBSI on 2026-10-26).
+Code, bundle ID, Azure resources and the local folder `~/code/sbsi` still use "sbsi"; that's fine.
+
 A **live, step-by-step "see what I see" assistant** for Meta Ray-Ban glasses. The user speaks;
 the AI watches the glasses' camera feed and talks them through a physical task (assembling or
 servicing equipment), e.g.:
@@ -136,7 +139,7 @@ Key design points:
 
 ## Reference links
 
-- **This repo (private until owner publishes):** https://github.com/dhruvstar10/sbsi. Commit
+- **This repo (private until owner publishes):** https://github.com/dhruvstar10/auzar. Commit
   identity is the GitHub noreply address (repo-local git config). Don't commit personal emails.
 
 - Meta Wearables DAT docs: https://wearables.developer.meta.com/docs/develop/dat/build-overview/
