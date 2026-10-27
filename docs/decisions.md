@@ -88,3 +88,9 @@ asks. Reason: 12 MP takes 17–72 s with the video paused. The large (1920x1080)
 The owner named the app **Auzar.ai**, after the Hindi word for tools (a nod to *Home Improvement*'s Tool Time).
 The GitHub repo is now `dhruvstar10/auzar` (GitHub redirects the old `sbsi` URL). Internal names (`SBSI` target, bundle ID
 `com.dhruvgoel.sbsi`, Azure `<resource>` / `rg-sbsi`, folder `~/code/sbsi`) are unchanged to avoid re-provisioning.
+
+## 2026-10-26 — Repo made public (Apache-2.0)
+
+The owner made `dhruvstar10/auzar` public so it can be linked from their website and forked. License Apache-2.0.
+Personal details (owner's name, Azure resource name) were scrubbed from current files; the owner chose to keep the
+git history as is (older commits still contain them; neither is a secret). From now on, every push is public.

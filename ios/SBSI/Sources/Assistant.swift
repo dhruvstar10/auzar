@@ -368,9 +368,10 @@ final class Assistant {
     await waitForQuiet()
     let playedBefore = audio.playedSeconds, speechBefore = speechStarts, photoStart = Date()
     let beeper = Task { @MainActor [audio] in
-      // A quick photo usually lands in ~2 s (the glasses play their own shutter sound), so only beep
-      // if it's taking longer (owner, 2026-10-27). 12 MP beeps from the start.
-      if quick { try? await Task.sleep(for: .seconds(3)) }
+      // Quick photos never beep: the glasses' shutter sound marks the capture, and the rest (2.6-8 s,
+      // tracking the link speed) is the JPEG transfer, so beeps after the shutter were confusing
+      // (owner, 2026-10-27). 12 MP beeps until the transfer starts.
+      if quick { return }
       while !Task.isCancelled {
         if !audio.isPlaying { audio.playBeep() }
         try? await Task.sleep(for: .milliseconds(700))
@@ -463,7 +464,7 @@ final class Assistant {
         .contains { text.lowercased().contains($0) }
     } ?? false
     let offer = !full && glasses.fullResPhotos && (unreadable || analysis == nil)
-      ? "\nSome text the user may need is unreadable in this quick photo. After answering what you can, ask the user in one short sentence whether to take a sharper 12 MP photo (it takes about a minute). Take it only if they say yes."
+      ? "\nSome text the user may need is unreadable in this quick photo. After answering what you can, ask the user in one short sentence whether to take a sharper 12 MP photo (it takes about a minute), and to face the label straight on with it in the middle of their view and in good light. Take it only if they say yes."
       : ""
     let analysisText = analysis.map {
       "\nHigh-detail analysis of the full-resolution photo by a vision model (most reliable for small text; prefer it over your own view and the OCR):\n\($0)"

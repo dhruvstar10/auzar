@@ -243,6 +243,21 @@ speech back through the glasses, with frames every 2 s. Owner verdict: "This was
   It also later said "if you share the printer's model…" after reading it, and it can't look up instructions (no web access).
   **Change:** prompt now says to relay a hedged reading as likely, and to remember what it has already identified. Untested.
   Idea: a web/manual lookup tool for model-specific steps (see ideas.md).
+- **Printer run 3 (session 2026-10-26_21-00-43, log 2026-10-27.log 04:00–04:03):** the quick photo (whole printer, ~1 m) took
+  **8.4 s** instead of ~2.6 s, so the slow-quick-photo beeps started after 3 s (as designed; cause of the slow capture unknown, video was
+  at 504x896). The 12 MP photo (badge area, also ~1 m) transferred at **21 KB/s, 60 s**, at the same printer where the previous run got
+  70 KB/s, so location isn't the only factor. Vision said the model number was too blurry; two desk re-runs said "MF264dw" (wrong; it's
+  MF269dw). At native resolution the digits are ~10 px tall and genuinely ambiguous. I first blamed distance (~1 m); the owner was already
+  closer, and measuring from the front panel (about half the frame) gives **~30 cm**. So the ~1.5 mm model text is at the limit of the
+  12 MP camera even up close; edge-of-frame softness, dim light and HEIC compression (~1 MB) tip it either way. The earlier "MF269dw"
+  success was luck at the limit. Closer may not help (the camera is likely fixed-focus).
+  **Change:** before a 12 MP photo the guide asks for the label straight on, in the middle of the view, in good light; if it's still
+  unreadable it says so and suggests the rating sticker or asking the user to read it.
+- **Baby-monitor run (session 2026-10-26_21-09-46, log 04:09–04:11):** owner: "why a shutter and then beeping for the photo?"
+  The quick photo took **6.1 s** (previous run 8.4 s, earlier ~2.6 s). The glasses' shutter marks the capture; the rest is the
+  ~260 KB JPEG crossing the same slow link as 12 MP photos, so the >3 s beeps came after the shutter and meant nothing to the user.
+  **Change:** quick photos never beep (shutter, then the "Got it" chime). Also seen: the first useful proactive speak-up
+  ("press the power button… so we can see the home screen"); vision read "FLEXON" on the case.
 - Next (was: test `take_photo`) (reading text, a label or model plate). Then a real multi-step task
   (proactive step confirmation). Then more glasses I/O as tools (see `ideas.md`).
 

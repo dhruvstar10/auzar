@@ -29,7 +29,7 @@ each step visually, and **speak up proactively** when a step is done or somethin
 - When the owner gives new guidance or a decision is made, append it to `docs/decisions.md`
   (dated) and update this file if it changes standing rules.
 - Use the project directory (this folder) for all project files. Since 2026-10-20 it lives at
-  **`~/code/sbsi`** (git repo, future GitHub repo). The old Google Drive folder
+  **`~/code/sbsi`** (git repo, public on GitHub as `dhruvstar10/auzar`). The old Google Drive folder
   (`My Drive/Projects/Meta RayBan SBSI`) only holds a pointer. Don't write project files there.
 - Work may later be **published (blog) and pushed to a public GitHub repo**. So:
   - Never commit secrets (API keys, Meta App IDs/client tokens, Apple Team IDs) — use
@@ -142,7 +142,7 @@ Key design points:
 
 ## Reference links
 
-- **This repo (private until owner publishes):** https://github.com/dhruvstar10/auzar. Commit
+- **This repo (PUBLIC since 2026-10-26; everything pushed is visible to anyone):** https://github.com/dhruvstar10/auzar. Commit
   identity is the GitHub noreply address (repo-local git config). Don't commit personal emails.
 
 - Meta Wearables DAT docs: https://wearables.developer.meta.com/docs/develop/dat/build-overview/

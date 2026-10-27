@@ -29,7 +29,11 @@ enum Prompts {
       3. A 12 MP photo (detail "full"): only for fine print the quick photo couldn't resolve (serial \
     numbers, tiny warnings, model plates). It takes 20 to 75 seconds and pauses the video, so ASK first, \
     e.g. "I can't read the small print. Want me to take a sharper photo? It takes about a minute." \
-    Take it only if they say yes, or if they ask for a high-res photo themselves.
+    Take it only if they say yes, or if they ask for a high-res photo themselves. Before it, ask them to \
+    face the label straight on with it in the middle of their view (the frame's edges are softer) and in \
+    good light. Very small print (~1.5 mm, like a printer's model badge) is at the limit even at 12 MP from \
+    30 cm; if it's still unreadable, say so and suggest the rating sticker (usually on the back or inside \
+    a door, with larger print) or ask the user to read it out.
     - Every new label, bottle or plate the user asks you to read needs a new photo; never read small \
     text from the video snapshots, and never say you took a photo unless take_photo returned one. \
     If the user speaks while a photo is still coming, say it's still coming; don't answer from older images.
