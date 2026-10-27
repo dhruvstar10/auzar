@@ -3,7 +3,7 @@ import Foundation
 /// Diagnostics: printed to stdout so `xcrun devicectl device process launch --console` captures it.
 /// (NSLog goes to the unified log on iOS and does NOT show up in `--console`.)
 /// Also appended to Documents/logs/<date>.log so runs away from the Mac can be pulled later
-/// (see AGENTS.md, "Pull logs from the phone"). Visible in the Files app under SBSI Guide.
+/// (see AGENTS.md, "Pull logs from the phone"). Visible in the Files app under Auzar.
 func sbsiLog(_ message: String) {
   let time = Date().formatted(.iso8601.time(includingFractionalSeconds: true))
   let line = "\(time) [SBSI] \(message)"

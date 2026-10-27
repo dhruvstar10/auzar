@@ -44,7 +44,7 @@ struct ContentView: View {
   private var header: some View {
     HStack(alignment: .top) {
       VStack(alignment: .leading, spacing: 2) {
-        Text("SBSI Guide").font(.headline)
+        Text("Auzar.ai").font(.headline)
         status("Glasses", "\(glasses.registrationState == .registered ? "registered" : "not registered") · \(glasses.sessionState.description) · \(String(describing: glasses.streamState))")
         status("Video", glasses.isStreaming ? String(format: "%.0f fps", glasses.frameRate) : "off")
         if let photo = glasses.photoStatus { status("Photo", photo) }

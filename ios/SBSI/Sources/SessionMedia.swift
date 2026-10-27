@@ -2,7 +2,7 @@ import UIKit
 
 /// Saves what the model saw during a session, so it can be inspected afterwards:
 /// Documents/sessions/<yyyy-MM-dd_HH-mm-ss>/photos (originals from the glasses + what was sent)
-/// and /frames (the video frames sent to the model). Visible in the Files app under SBSI Guide,
+/// and /frames (the video frames sent to the model). Visible in the Files app under Auzar,
 /// or pull with `devicectl device copy from ... --source Documents/sessions` (see AGENTS.md).
 final class SessionMedia: @unchecked Sendable {
   let folder: URL
