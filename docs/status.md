@@ -246,7 +246,7 @@ speech back through the glasses, with frames every 2 s. Owner verdict: "This was
 - Next (was: test `take_photo`) (reading text, a label or model plate). Then a real multi-step task
   (proactive step confirmation). Then more glasses I/O as tools (see `ideas.md`).
 
-**2026-10-22 update: Azure AI side verified.** Foundry resource `sbsi-foundry-dg` (Central US),
+**2026-10-22 update: Azure AI side verified.** Foundry resource `<resource>` (Central US),
 deployment `realtime-mini` = `gpt-realtime-2.1-mini`. `tools/realtime_smoke_test.py` sent an image
 + question and got a correct spoken answer (first audio in ~2.1 s, ~323 tokens per image). Key lives
 only in gitignored `.env`. **Both halves now work separately** (glasses→phone video; image→spoken

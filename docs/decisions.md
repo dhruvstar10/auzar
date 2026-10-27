@@ -49,7 +49,7 @@ Newest at the bottom. Format: `YYYY-MM-DD — decision — why`.
   locked). Glasses-side feasibility is proven; next focus is the AI loop (Azure + our own app).
 - 2026-10-20 — Owner: move everything out of Google Drive into **`~/code/sbsi`** (git repo,
   future public GitHub repo). Drive folder keeps only a pointer README.
-- 2026-10-22 — Azure: Foundry resource `sbsi-foundry-dg` (rg `rg-sbsi`, **Central US**, project
+- 2026-10-22 — Azure: Foundry resource `<resource>` (rg `rg-sbsi`, **Central US**, project
   `proj-sbsi`). West US 2 rejected: no realtime models there. Owner deploys **only
   `gpt-realtime-2.1-mini` (deployment `realtime-mini`)** for now. A full `gpt-realtime-2.1`
   deployment (`realtime-full`) is deferred until we need a quality comparison. Keep the model/deployment
@@ -87,4 +87,4 @@ asks. Reason: 12 MP takes 17–72 s with the video paused. The large (1920x1080)
 
 The owner named the app **Auzar.ai**, after the Hindi word for tools (a nod to *Home Improvement*'s Tool Time).
 The GitHub repo is now `dhruvstar10/auzar` (GitHub redirects the old `sbsi` URL). Internal names (`SBSI` target, bundle ID
-`com.dhruvgoel.sbsi`, Azure `sbsi-foundry-dg` / `rg-sbsi`, folder `~/code/sbsi`) are unchanged to avoid re-provisioning.
+`com.dhruvgoel.sbsi`, Azure `<resource>` / `rg-sbsi`, folder `~/code/sbsi`) are unchanged to avoid re-provisioning.

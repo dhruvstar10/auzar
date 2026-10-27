@@ -22,12 +22,12 @@ Never put keys or endpoints-with-keys in this file. Record names/regions only.
 - [x] Subscription: **Visual Studio Enterprise** (only subscription; $150/mo credit, spending limit on by default)
 - [x] Region: **Central US** (chosen 2026-10-22)
 - [x] Resource group: **`rg-sbsi`**
-- [x] Foundry resource: **`sbsi-foundry-dg`** (Central US, public network access, system-assigned identity, no Key Vault/App Insights)
+- [x] Foundry resource: **`<resource>`** (Central US, public network access, system-assigned identity, no Key Vault/App Insights)
 - [x] Foundry project: **`proj-sbsi`**
 - [x] Model deployed (2026-10-22): **`realtime-mini`** → `gpt-realtime-2.1-mini` version 2026-07-07,
       **Global Standard**, 100k TPM / 200 RPM, content filter DefaultV2, version-upgrade policy
       "once a new default version is available". Model retirement date: **2027-07-30**.
-      Endpoint host: `sbsi-foundry-dg.cognitiveservices.azure.com`.
+      Endpoint host: `<resource>.cognitiveservices.azure.com`. The real resource name isn't in the repo: it's the host in `AZURE_OPENAI_ENDPOINT` in the gitignored `.env`.
 - [x] Budget `sbsi-monthly` on the subscription (2026-10-22): $150, reset period **billing month**,
       email alerts at actual 50/80/95%. Cost data lags hours, so the spending limit is the real stop.
 - [x] Smoke test from the Mac (2026-10-22): `tools/realtime_smoke_test.py` (venv `.venv`, websockets 13.1).
@@ -51,7 +51,7 @@ Sources: https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts
 - [x] Azure CLI installed (`brew install azure-cli`, 2.91.0) and logged in (`az login`, Visual Studio Enterprise Subscription).
   Resource group: **`rg-sbsi`**.
 - [x] Deployment **`vision`** → `gpt-5.4-mini` version 2026-03-17, GlobalStandard, 50K TPM, created with:
-  `az cognitiveservices account deployment create -g rg-sbsi -n sbsi-foundry-dg --deployment-name vision --model-name gpt-5.4-mini --model-version 2026-03-17 --model-format OpenAI --sku-name GlobalStandard --sku-capacity 50`
+  `az cognitiveservices account deployment create -g rg-sbsi -n <resource> --deployment-name vision --model-name gpt-5.4-mini --model-version 2026-03-17 --model-format OpenAI --sku-name GlobalStandard --sku-capacity 50`
 - Used by `VisionClient.swift` (chat completions at `https://<host>/openai/v1/chat/completions`, `model` = deployment name) and
   `tools/vision_test.py`. `.env` key: `AZURE_OPENAI_VISION_DEPLOYMENT=vision`, passed to the app via `tools/gen_ios_secrets.sh`.
-- List models the resource can deploy: `az cognitiveservices account list-models -g rg-sbsi -n sbsi-foundry-dg`.
+- List models the resource can deploy: `az cognitiveservices account list-models -g rg-sbsi -n <resource>`.

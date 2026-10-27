@@ -138,7 +138,7 @@ eventual publishing. Not a blocker for the first prototype.
   them from the target), and switch the Team to the paid team.
 - Also: tapping the glasses touchpad toggles the session to **paused** (touchpad = play/pause input).
 - 2026-10-20: **Paid Apple Developer Program active.** Same team ID as the free personal
-  team (upgraded in place; Xcode → Settings → Apple Accounts now shows "Dhruv Goel — Admin").
+  team (upgraded in place; Xcode → Settings → Apple Accounts now shows the account as "Admin").
   Xcode's cached `defaults` still says "Personal Team", so don't trust it. Restored the entitlements
   file; signed build now contains `networking.HotspotConfiguration` + `networking.wifi-info`
   (verified with `codesign -d --entitlements :-`). Reinstalled on iPhone.
